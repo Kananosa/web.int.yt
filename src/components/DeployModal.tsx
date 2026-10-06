@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRightIcon } from './icons/CardIcons';
 
 interface DeployModalProps {
@@ -19,37 +19,78 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
   const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [deployFinished, setDeployFinished] = useState(false);
 
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach((t) => clearTimeout(t));
+    timeoutsRef.current = [];
+  };
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      clearAllTimeouts();
+    };
+  }, []);
+
+  // Reset or cancel when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      clearAllTimeouts();
+      setDeploying(false);
+      setDeployProgress(0);
+      setDeployLogs([]);
+      setDeployFinished(false);
+    }
+  }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleStartDeploy = (e: React.FormEvent) => {
     e.preventDefault();
+    clearAllTimeouts();
     setDeploying(true);
     setDeployProgress(10);
-    setDeployLogs(['[build] Initializing isolated sandboxed worker...']);
+    setDeployLogs(['[demo] Initializing isolated sandboxed worker...']);
 
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       setDeployProgress(35);
       setDeployLogs((prev) => [...prev, `[git] Cloning ${repoUrl} (branch: ${branch})...`]);
     }, 700);
 
-    setTimeout(() => {
+    const t2 = setTimeout(() => {
       setDeployProgress(65);
       setDeployLogs((prev) => [...prev, `[build] Running command: "${buildCommand}"...`, `[dist] Output directory detected: ./${publishDir}`]);
     }, 1500);
 
-    setTimeout(() => {
+    const t3 = setTimeout(() => {
       setDeployProgress(90);
       setDeployLogs((prev) => [...prev, `[edge] Syncing assets to global edge network...`, `[ssl] Automatic SSL certificate provisioned.`]);
     }, 2300);
 
-    setTimeout(() => {
+    const t4 = setTimeout(() => {
       setDeployProgress(100);
-      setDeployLogs((prev) => [...prev, `[release] Atomic symlink switched. Deploy successful! 🚀`]);
+      setDeployLogs((prev) => [...prev, `[release] Atomic symlink switched. Simulated deployment successful! 🚀`]);
       setDeployFinished(true);
     }, 3100);
+
+    timeoutsRef.current.push(t1, t2, t3, t4);
   };
 
   const handleReset = () => {
+    clearAllTimeouts();
     setDeploying(false);
     setDeployProgress(0);
     setDeployLogs([]);
@@ -57,30 +98,55 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-[680px] bg-[#0C1226] border border-white/15 rounded-[24px] shadow-2xl p-6 sm:p-8 text-white relative">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deploy-modal-title"
+        className="w-full max-w-[680px] max-h-[90vh] overflow-y-auto bg-[#0C1226] border border-white/15 rounded-[24px] shadow-2xl p-6 sm:p-8 text-white relative focus:outline-none"
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+          aria-label="Close dialog"
+          className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           ✕
         </button>
 
-        <h3 className="text-[24px] font-bold text-white mb-2">Deploy a New Static Website</h3>
+        <h3 id="deploy-modal-title" className="text-[24px] font-bold text-white mb-2">
+          Deploy a New Static Website <span className="text-[14px] font-normal text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 ml-2">Interactive Demo</span>
+        </h3>
         <p className="text-[14px] text-white/60 mb-6">
-          Connect your repository and Intent Web builds, optimizes, and serves your site instantly.
+          Connect your repository and Intent Web builds, optimizes, and serves your site instantly. Real deployments run via{' '}
+          <a
+            href="https://panel.web.int.yt"
+            target="_blank"
+            rel="noreferrer"
+            className="text-cyan-400 hover:underline"
+          >
+            panel.web.int.yt
+          </a>
+          .
         </p>
 
         {!deploying ? (
           <form onSubmit={handleStartDeploy} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+                <label htmlFor="deploy-site-name" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                   Site Name *
                 </label>
                 <input
+                  id="deploy-site-name"
                   type="text"
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
@@ -92,10 +158,11 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+                <label htmlFor="deploy-subdomain" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                   Subdomain *
                 </label>
                 <input
+                  id="deploy-subdomain"
                   type="text"
                   value={subdomain}
                   onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
@@ -104,16 +171,17 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
                   required
                 />
                 <span className="text-[11px] text-blue-400 mt-1 block truncate">
-                  Live URL: https://{subdomain || 'your-site'}.web.int.yt
+                  Target URL: https://{subdomain || 'your-site'}.web.int.yt
                 </span>
               </div>
             </div>
 
             <div>
-              <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+              <label htmlFor="deploy-repo-url" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                 Git Repository URL *
               </label>
               <input
+                id="deploy-repo-url"
                 type="text"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
@@ -126,10 +194,11 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+                <label htmlFor="deploy-branch" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                   Branch *
                 </label>
                 <input
+                  id="deploy-branch"
                   type="text"
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
@@ -139,10 +208,11 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+                <label htmlFor="deploy-build-command" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                   Build Command
                 </label>
                 <input
+                  id="deploy-build-command"
                   type="text"
                   value={buildCommand}
                   onChange={(e) => setBuildCommand(e.target.value)}
@@ -152,10 +222,11 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
+                <label htmlFor="deploy-publish-dir" className="block text-[12px] font-bold text-white/80 uppercase tracking-wider mb-1">
                   Publish Directory *
                 </label>
                 <input
+                  id="deploy-publish-dir"
                   type="text"
                   value={publishDir}
                   onChange={(e) => setPublishDir(e.target.value)}
@@ -171,15 +242,15 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-[14px] font-medium transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-[14px] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-lg bg-[#2A64E7] hover:bg-[#3873f7] active:bg-[#2052c4] text-white text-[14px] font-semibold transition-colors shadow-md cursor-pointer flex items-center gap-2"
+                className="px-6 py-2.5 rounded-lg bg-[#2A64E7] hover:bg-[#3873f7] active:bg-[#2052c4] text-white text-[14px] font-semibold transition-colors shadow-md cursor-pointer flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
-                <span>Create & Deploy Site</span>
+                <span>Run Simulated Deploy</span>
                 <ArrowRightIcon size={16} />
               </button>
             </div>
@@ -189,7 +260,7 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
             {/* Progress bar */}
             <div>
               <div className="flex justify-between text-[13px] text-white/70 mb-1.5 font-mono">
-                <span>{deployFinished ? 'Deploy Complete' : 'Deploying to edge network...'}</span>
+                <span>{deployFinished ? 'Simulated Deploy Complete' : 'Simulating deployment to edge network...'}</span>
                 <span>{deployProgress}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -211,24 +282,29 @@ export const DeployModal: React.FC<DeployModalProps> = ({ isOpen, onClose }) => 
             </div>
 
             {deployFinished && (
-              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-between">
+              <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div>
-                  <div className="text-[12px] text-blue-300 font-medium">Your site is live at:</div>
-                  <a
-                    href={`https://${subdomain || 'my-portfolio'}.web.int.yt`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[15px] font-mono text-cyan-400 hover:underline font-semibold"
-                  >
-                    https://{subdomain || 'my-portfolio'}.web.int.yt
-                  </a>
+                  <div className="text-[12px] text-blue-300 font-medium">Demo simulation finished:</div>
+                  <div className="text-[14px] text-white/80 mt-0.5">
+                    Ready to deploy for real? Head to{' '}
+                    <a
+                      href="https://panel.web.int.yt/authentication/sign-up"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-cyan-400 hover:underline font-semibold"
+                    >
+                      panel.web.int.yt
+                    </a>
+                  </div>
                 </div>
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[13px] font-semibold transition-colors cursor-pointer"
-                >
-                  Deploy Another
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleReset}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[13px] font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    Run Demo Again
+                  </button>
+                </div>
               </div>
             )}
           </div>

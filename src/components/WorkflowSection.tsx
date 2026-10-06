@@ -2,7 +2,7 @@ import React from 'react';
 
 export const WorkflowSection: React.FC = () => {
   return (
-    <section className="mt-[110px] w-full flex justify-center px-4 sm:px-6 lg:px-8 font-sans">
+    <section id="how-it-works" className="mt-[110px] w-full flex justify-center px-4 sm:px-6 lg:px-8 font-sans scroll-mt-24">
       <div className="w-full max-w-[1200px]">
         {/* Headline */}
         <h2 className="text-[44px] sm:text-[54px] lg:text-[64px] font-bold text-white tracking-[-0.03em] leading-[1.12] mb-10">

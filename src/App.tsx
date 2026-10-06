@@ -7,8 +7,7 @@ import { BottomCTA } from './components/BottomCTA';
 import { Footer } from './components/Footer';
 export const App: React.FC = () => {
   const handleScrollToWorkflow = () => {
-    window.scrollTo({
-      top: 950,
+    document.getElementById('how-it-works')?.scrollIntoView({
       behavior: 'smooth',
     });
   };
