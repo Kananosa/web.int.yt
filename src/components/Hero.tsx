@@ -1,20 +1,33 @@
 import React from 'react';
 import { ArrowRightIcon } from './icons/CardIcons';
+import SplitText from './SplitText';
 
 interface HeroProps {
-  onDeployClick: () => void;
   onHowItWorksClick: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onDeployClick, onHowItWorksClick }) => {
+export const Hero: React.FC<HeroProps> = ({ onHowItWorksClick }) => {
   return (
     <section className="pt-[155px] flex flex-col items-center w-full px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-[1200px]">
         {/* Main Title */}
-        <h1 className="text-[44px] sm:text-[54px] lg:text-[64px] font-bold text-white tracking-[-0.03em] leading-[1.12] mb-6">
-          Push your code.
-          <br />
-          Deploy is <span className="italic font-serif font-normal">faster</span> than switching tabs.
+        <h1 className="text-[44px] sm:text-[54px] lg:text-[64px] font-bold text-white tracking-[-0.03em] leading-[1.12] mb-6 flex flex-col items-start">
+          <SplitText
+            text="Push your code."
+            className="text-[44px] sm:text-[54px] lg:text-[64px] font-bold text-white tracking-[-0.03em] leading-[1.12]"
+            delay={40}
+            duration={0.7}
+            ease="power3.out"
+            splitType="chars"
+            from={{ opacity: 0, y: 30 }}
+            to={{ opacity: 1, y: 0 }}
+            threshold={0.1}
+            textAlign="left"
+            tag="span"
+          />
+          <span>
+            Deploy is <span className="italic font-serif font-normal">faster</span> than switching tabs.
+          </span>
         </h1>
 
         {/* Subtitle Description */}
@@ -25,14 +38,13 @@ export const Hero: React.FC<HeroProps> = ({ onDeployClick, onHowItWorksClick }) 
         {/* Call to Action Buttons */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-16">
           {/* Primary CTA */}
-          <button
-            onClick={onDeployClick}
-            type="button"
+          <a
+            href="https://panel.web.int.yt/authentication/sign-up"
             className="h-[57px] w-full sm:w-[334px] rounded-[12px] bg-[#2A64E7] hover:bg-[#3873f7] active:bg-[#2052c4] text-white text-[20px] font-medium flex items-center justify-center gap-3 transition-all duration-200 shadow-lg shadow-blue-900/30 group cursor-pointer"
           >
             <span>Deploy your first site</span>
             <ArrowRightIcon size={22} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          </a>
 
           {/* Secondary CTA */}
           <button
